@@ -98,7 +98,7 @@ class AddProblemTests(unittest.TestCase):
                 self.assertEqual((folder / "statement.md").read_text(), "# Example\n")
                 self.assertEqual((folder / "in/1.txt").read_text(), "3\n")
                 self.assertEqual((folder / "out/1.out").read_text(), "answer\n")
-                self.assertIn("add_subdirectory(1234)", registry.read_text())
+                self.assertEqual(registry.read_text(), "# Problems\n")
                 with self.assertRaises(SystemExit):
                     add_problem.main()
                 self.assertEqual(download.call_count, 1)

@@ -1,6 +1,7 @@
 """Exercise Make's run shortcut with a temporary echo program, not real solutions."""
 
 from pathlib import Path
+import os
 import shutil
 import subprocess
 import tempfile
@@ -166,6 +167,43 @@ class IncrementalBuildTests(unittest.TestCase):
         self.cmake.write_text(self.cmake.read_text() + "\n# changed configuration\n")
         output = self.make("run", "ID=1234")
         self.assertIn("RUN_FIXTURE_CONFIGURE", output)
+
+    def test_new_problem_targets_are_available_without_manual_configure(self):
+        problems = self.root / "problems"
+        problems.mkdir()
+        registry = problems / "CMakeLists.txt"
+        shutil.copyfile(ROOT / "problems/CMakeLists.txt", registry)
+        original_registry = registry.read_text()
+        self.cmake.write_text(self.cmake.read_text() + "\nadd_subdirectory(problems)\n")
+        for name in ("5678-not-a-problem", "9999"):
+            ignored = problems / name
+            ignored.mkdir()
+            (ignored / "CMakeLists.txt").write_text('message(FATAL_ERROR "Should be ignored")\n')
+            if name == "5678-not-a-problem":
+                (ignored / "main.cpp").write_text("// Not a numeric folder\n")
+        self.make("run", "ID=1234")
+        time.sleep(0.02)
+        problem = problems / "5678"
+        problem.mkdir()
+        (problem / "CMakeLists.txt").write_text(
+            'add_executable(problem_5678 "${CMAKE_SOURCE_DIR}/main.cpp")\n'
+            'add_custom_target(test_5678 COMMAND "${CMAKE_COMMAND}" -E echo '
+            '"NEW_PROBLEM_TEST" DEPENDS problem_5678)\n')
+        (problem / "main.cpp").write_text("// Complete problem folder\n")
+        # Simulate copying a problem whose files predate the configured build.
+        os.utime(problem / "CMakeLists.txt", (1, 1))
+        output = self.make("test", "ID=5678")
+        self.assertIn("RUN_FIXTURE_CONFIGURE", output)
+        self.assertIn("NEW_PROBLEM_TEST", output)
+        repeated = self.make("test", "ID=5678")
+        self.assertNotIn("RUN_FIXTURE_CONFIGURE", repeated)
+        self.assertIn("NEW_PROBLEM_TEST", repeated)
+        self.make("build", "ID=5678")
+        self.assertEqual(registry.read_text(), original_registry)
+        shutil.rmtree(problem)
+        removed = self.make("run", "ID=1234")
+        self.assertIn("RUN_FIXTURE_CONFIGURE", removed)
+        self.assertNotIn("RUN_FIXTURE_CONFIGURE", self.make("run", "ID=1234"))
 
     def test_clean_and_distclean_recover(self):
         self.make("run", "ID=1234")

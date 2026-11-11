@@ -47,8 +47,8 @@ example, a CMake bug fix is `fix(tooling)`, not `chore(repo)`.
 
 - Keep solution changes separate from tooling changes. Stage related files
   explicitly when both are present in the working tree.
-- A problem-scaffolding commit may include its registration in
-  `problems/CMakeLists.txt`; that alone does not make it a tooling change.
+- Problem folders are discovered automatically. A problem commit only needs its
+  own folder; do not edit `problems/CMakeLists.txt` to register individual IDs.
 - Run the relevant checks before committing: `just test <id>` for a solution,
   and `just check` (or `make check`) for tooling. Tests live in `tests/`.
 - Never commit `.env`, credentials, downloaded test cases, or build artifacts.

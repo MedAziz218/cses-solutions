@@ -8,6 +8,8 @@ ifeq ($(origin USERNAME),environment)
 USERNAME :=
 endif
 PROBLEMS := $(sort $(patsubst problems/%/main.cpp,%,$(wildcard problems/[0-9]*/main.cpp)))
+# Directory timestamps also detect added/removed folders, even with older files.
+CMAKE_INPUTS := CMakeLists.txt $(wildcard problems problems/[0-9]*/ problems/CMakeLists.txt problems/*/CMakeLists.txt cmake/*.cmake)
 
 .PHONY: help init configure build test test-all check run open submit add download-tests list clean distclean check-id
 
@@ -37,25 +39,28 @@ init:
 check:
 	$(PYTHON) -m unittest discover -s tests -t . -p 'test_*.py' -v
 
-# Configure a fresh build once; CMake's build system tracks later CMake changes.
-build/CMakeCache.txt:
+# Regenerate before resolving targets when CMake definitions change. A separate
+# stamp is needed because CMakeCache.txt is not rewritten on every configure.
+build/.configured: $(CMAKE_INPUTS)
 	cmake -S . -B build
+	cmake -E touch build/.configured
 
 # Explicitly requesting configure still forces a configuration pass.
 configure:
 	cmake -S . -B build
+	cmake -E touch build/.configured
 
 check-id:
 	@case "$(ID)" in ''|*[!0-9]*) echo 'Provide a numeric problem ID: ID=1070' >&2; exit 1;; esac
 
-build: build/CMakeCache.txt
+build: build/.configured
 	$(if $(ID),$(MAKE) --no-print-directory check-id, @:)
 	cmake --build build --parallel $(JOBS) $(if $(ID),--target problem_$(ID))
 
-test: check-id build/CMakeCache.txt
+test: check-id build/.configured
 	cmake -E env "CSES_TEST_CASES=$(CASE)" cmake --build build --target test_$(ID) --parallel $(JOBS)
 
-test-all: build/CMakeCache.txt
+test-all: build/.configured
 	@set -e; for id in $(PROBLEMS); do \
 	  cmake --build build --target test_$$id --parallel $(JOBS); \
 	done

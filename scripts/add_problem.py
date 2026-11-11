@@ -287,13 +287,7 @@ def main():
         print(f"Downloading statement and tests for {args.problem_id}...")
         statement = download_statement(args.problem_id)
         archive_data = download_tests(args.problem_id, username, password)
-        cmake_path = ROOT / "problems" / "CMakeLists.txt"
-        cmake = cmake_path.read_text()
-        registration = f"add_subdirectory({args.problem_id})"
-        if not re.search(r"(?m)^\s*add_subdirectory\(\s*" + re.escape(args.problem_id) + r"\s*\)", cmake):
-            cmake = cmake.rstrip() + "\n" + registration + "\n"
-
-        # Stage everything before creating the problem directory or changing CMake.
+        # Stage everything before creating the automatically discovered problem folder.
         with tempfile.TemporaryDirectory(prefix=".cses-add-", dir=ROOT) as temp:
             staged = Path(temp) / args.problem_id
             staged.mkdir()
@@ -302,11 +296,6 @@ def main():
             if destination.exists():
                 raise ValueError("Problem directory appeared during download; refusing to overwrite.")
             staged.rename(destination)
-            try:
-                cmake_path.write_text(cmake)
-            except OSError:
-                shutil.rmtree(destination)
-                raise
         print(f"Created {destination} with statement.md, {count} official tests, and an empty main.cpp.")
         print("Configure: cmake -S . -B build")
         print(f"Build:     cmake --build build --target problem_{args.problem_id}")

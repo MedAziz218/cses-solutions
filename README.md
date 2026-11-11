@@ -7,7 +7,7 @@ incrementally. Solutions and statements are committed; official test cases stay 
 
 ```text
 problems/
-├── CMakeLists.txt          # Registered problems
+├── CMakeLists.txt          # Automatic problem discovery
 ├── 1068/
 │   ├── main.cpp            # Solution to submit
 │   ├── statement.md        # Problem statement, limits, and examples
@@ -36,7 +36,9 @@ justfile
 ```
 
 Build artifacts and downloaded tests are ignored by Git. Solutions, statements,
-and per-problem CMake files are tracked under `problems/`.
+and per-problem CMake files are tracked under `problems/`. To commit one problem,
+stage only its folder, e.g. `git add problems/1069`; no shared registration file
+needs staging, even when other problems are pending.
 
 ## Shortcuts
 
@@ -83,10 +85,11 @@ are rejected. Range selection currently applies to `run`; `test` accepts names
 or comma-separated lists.
 
 Explicit redirection still works: `just run 1070 < problems/1070/in/1.txt`.
-Builds are incremental: configuration runs automatically for a fresh build, and
-CMake tracks subsequent source, header, and CMake changes. An unchanged `run`
-checks the target but does not reconfigure, compile, or link. Use `just configure`
-when you explicitly want to force configuration.
+Builds are incremental: configuration runs automatically for a fresh build or
+when CMake definitions or the set of problem folders changes. Sources and
+headers use CMake's dependency tracking. An unchanged `run` checks the target but
+does not reconfigure, compile, or link. Use `just configure` when you explicitly
+want to force configuration.
 Building does not run tests. Test commands fail until your solution produces the
 expected output. Clean commands leave your sources and downloaded tests intact.
 
@@ -246,7 +249,8 @@ python3 scripts/add_problem.py 1070 YOUR_USERNAME 'YOUR_PASSWORD'
 
 The script logs in, downloads official tests, saves the problem description as
 `problems/1070/statement.md`, creates `problems/1070/main.cpp` with no solution,
-and registers the folder in `problems/CMakeLists.txt`. Existing problem
+without editing any shared CMake files. Numeric folders containing both
+`main.cpp` and `CMakeLists.txt` are discovered automatically. Existing problem
 folders are never overwritten. The scripts never write credentials or login
 cookies to disk; an optional `.env` is created and maintained by you.
 The script works from any directory; run the following commands from this project's root:
