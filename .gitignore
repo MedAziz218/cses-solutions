@@ -1,0 +1,19 @@
+# Local credentials (only the blank example is tracked)
+.env
+.env.*
+!.env.example
+
+# CMake builds and local generated files
+/build/
+
+# Python caches and temporary problem downloads
+__pycache__/
+*.py[cod]
+/.cses-add-*/
+
+# Official tests are downloaded locally, not committed
+/problems/*/in/
+/problems/*/out/
+
+# Test runner output
+actual_*.txt
