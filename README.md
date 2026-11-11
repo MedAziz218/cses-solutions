@@ -20,10 +20,12 @@ scripts/
 ├── init.py                 # Fresh-clone setup
 ├── cses_config.py          # Local credential loading
 ├── open_problem.py         # Configurable editor shortcut
+├── run_problem.py          # Stdin or selected test inputs
 └── submit.py               # Confirmed C++17 submission
 tests/
 ├── __init__.py             # Test discovery setup
 ├── test_open.py            # Editor shortcut checks
+├── test_run.py             # Stdin and test-file run checks
 ├── test_submit.py          # Submission checks (mocked uploads)
 └── test_tooling.py         # Other offline regression checks
 cmake/
@@ -52,7 +54,9 @@ optionally `just`. Both interfaces use the same build setup.
 | Run selected cases | `make test ID=1068 CASE=1,3,7` | `just test 1068 1,3,7` |
 | Test all | `make test-all` | `just test-all` |
 | Check tooling | `make check` | `just check` |
-| Build and run | `make run ID=1070` | `just run 1070` |
+| Build and run (stdin) | `make run ID=1070` | `just run 1070` |
+| Run with test input | `make run ID=1069 CASE=2` | `just run 1069 2` |
+| Run multiple inputs | `make run ID=1069 CASE=2,3,5-9` | `just run 1069 2,3,5-9` |
 | Open solution | `make open ID=1069` | `just open 1069` |
 | Submit after local tests | `make submit ID=1068` | `just submit 1068` |
 | Add problem | `make add ID=1071` | `just add 1071` |
@@ -65,7 +69,24 @@ Case names match input filenames: `3` selects `in/3.txt`, while `01` selects
 `in/01.txt`. A `.txt` suffix is optional. Unknown cases fail with an error;
 omitting the selection runs all cases. Selection applies only to that invocation.
 
-To run with a test input: `just run 1070 < problems/1070/in/1.txt`.
+`just run 1069` reads from stdin as usual. `just run 1069 2` instead reads
+`problems/1069/in/2.txt` and prints the program's output without comparing it.
+Lists (`2,3`), inclusive ranges (`2-9`), and combinations (`2,3,5-9`) are supported.
+The command builds once, runs inputs in the selected order, removes duplicates,
+and labels output when multiple inputs are selected. A program failure stops the
+remaining runs. All input paths are checked before building or running.
+
+Use `just test 1069 2` to compare against the expected output. For zero-padded
+filenames, pass the exact name: `just run 1069 02` selects `in/02.txt`;
+`02-09` selects zero-padded names. Descending ranges and missing/invalid cases
+are rejected. Range selection currently applies to `run`; `test` accepts names
+or comma-separated lists.
+
+Explicit redirection still works: `just run 1070 < problems/1070/in/1.txt`.
+Builds are incremental: configuration runs automatically for a fresh build, and
+CMake tracks subsequent source, header, and CMake changes. An unchanged `run`
+checks the target but does not reconfigure, compile, or link. Use `just configure`
+when you explicitly want to force configuration.
 Building does not run tests. Test commands fail until your solution produces the
 expected output. Clean commands leave your sources and downloaded tests intact.
 

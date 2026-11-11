@@ -25,9 +25,9 @@ test id cases="":
 test-all:
     @make --no-print-directory test-all
 
-# Build and run one problem; accepts stdin
-run id:
-    @make --no-print-directory run ID="{{id}}"
+# Run with stdin or input selections: just run 1069 / just run 1069 2,3,5-9
+run id case="":
+    @make --no-print-directory run ID="{{id}}" CASE="{{case}}"
 
 # Open main.cpp; override the editor with: just open 1069 vim
 open id editor="":
